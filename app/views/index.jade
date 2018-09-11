@@ -1,0 +1,94 @@
+extends layout
+
+block content
+  main#root.container
+      br
+      .cards.center
+        .card.bg-white
+          h2.card-header= title
+          .card-body
+            form#form(style="width:350px;",action="/api/add",method="post")
+              input(type="text", name="note",value="one note",autofocus='autofocus')
+              input(type="hidden",name="pathname",value= status)
+            ul#list
+              each item in data
+                if item.finished
+                  li
+                    span.completed(data-id= item.id)= item.title
+                    .remove.icon
+                else
+                  li
+                    span(data-id= item.id)= item.title
+                    .remove.icon
+          .card-footer
+            .nav
+              case status
+                when 'all'
+                  a.nav-item.active(href='/') ALL
+                  a.nav-item(href='/doing') DOING
+                  a.nav-item(href='/finished') FINISHED
+                when 'doing'
+                  a.nav-item(href='/') ALL
+                  a.nav-item.active(href='/doing') DOING
+                  a.nav-item(href='/finished') FINISHED
+                when 'finished'
+                  a.nav-item(href='/') ALL
+                  a.nav-item(href='/doing') DOING
+                  a.nav-item.active(href='/finished') FINISHED
+
+  script(type='text/javascript').
+    $(function(){
+      var $lis = $('#list').find('span');
+      var $dels = $('#list').find('.remove');
+      var root = '/api'
+      var url = {
+        complete: root + '/complete',
+        remove: root + '/remove'
+      }
+
+      function api_complete(id,callback){
+        $.post(url.complete,{id:id},function(res){
+          callback && callback(res)
+        })
+      }
+
+      function api_remove(id,callback){
+        $.post(url.remove,{id:id},function(res){
+          callback && callback(res)
+        })
+      }
+
+      function complete(e){
+        e.preventDefault();
+        var $this = $(this);
+        var id = $this.data('id');
+        api_complete(id,function(res){
+          if(res.code == 200){
+            if(res.status){
+              $this.addClass('completed');
+            }else{
+              $this.removeClass('completed');
+            }
+          }
+        });
+      }
+
+      function remove(e){
+        e.preventDefault();
+        var $this = $(this);
+        var id = $this.prev().data('id');
+        api_remove(id,function(res){
+         if(res.code == 200){
+            $this.parent()[0].remove()
+         }
+        });
+      }
+
+      function bindEventListener(){
+        $lis.on('click',complete);
+        $dels.on('click',remove)
+      }
+
+      bindEventListener();
+
+    })
